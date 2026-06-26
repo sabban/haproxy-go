@@ -24,6 +24,13 @@ func (s *SliceBuffer) Reset() {
 	s.writeOffset = 0
 }
 
+func (s *SliceBuffer) ResetSize(size int) {
+	if len(s.buf) != size {
+		s.buf = make([]byte, size)
+	}
+	s.Reset()
+}
+
 func (s *SliceBuffer) ReadBytes() []byte {
 	return s.buf[s.readOffset:s.writeOffset]
 }

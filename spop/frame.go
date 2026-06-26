@@ -17,7 +17,7 @@ var framePool = sync.Pool{
 	New: func() any {
 		return &frame{
 			length: make([]byte, uint32Len),
-			buf:    buffer.NewSliceBuffer(maxFrameSize),
+			buf:    buffer.NewSliceBuffer(0),
 		}
 	},
 }
@@ -54,12 +54,11 @@ func (f *frame) ReadFrom(r io.Reader) (int64, error) {
 		return 0, fmt.Errorf("reading frame length: %w", err)
 	}
 	frameLen := binary.BigEndian.Uint32(f.length)
-
 	if frameLen > maxFrameSize {
 		return int64(len(f.length)), fmt.Errorf("frame length %d exceeds maximum %d", frameLen, maxFrameSize)
 	}
 
-	f.buf.Reset()
+	f.buf.ResetSize(int(frameLen))
 	dataBuf := f.buf.WriteNBytes(int(frameLen))
 
 	// read full frame into buffer
@@ -83,6 +82,8 @@ func (f *frame) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (f *frame) encodeHeader() error {
+	f.buf.ResetSize(maxFrameSize)
+
 	f.buf.WriteNBytes(1)[0] = byte(f.frameType)
 
 	binary.BigEndian.PutUint32(f.buf.WriteNBytes(uint32Len), uint32(f.meta.Flags))
